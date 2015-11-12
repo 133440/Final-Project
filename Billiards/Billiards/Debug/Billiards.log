@@ -1,0 +1,33 @@
+﻿Build started 11/8/2015 12:37:30 PM.
+     1>Project "C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Billiards\Billiards.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /I"SFML-2.3.2/include" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"stdafx.h" /Fp"Debug\Billiards.pch" /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt Billiards.cpp
+         Billiards.cpp
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(31): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(60): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(70): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(124): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(131): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(132): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(140): warning C4244: 'argument': conversion from 'unsigned int' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(152): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(181): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(216): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(217): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(221): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(235): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(259): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(287): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(289): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(307): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(308): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(309): warning C4018: '<': signed/unsigned mismatch
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.exe" /INCREMENTAL /NOLOGO /LIBPATH:"SFML-2.3.2/lib" "sfml-graphics-d.lib" "sfml-window-d.lib" "sfml-system-d.lib" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /PDB:"C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.lib" /MACHINE:X86 Debug\Billiards.obj
+         Debug\stdafx.obj
+         Billiards.vcxproj -> C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.exe
+     1>Done Building Project "C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Billiards\Billiards.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:04.01
