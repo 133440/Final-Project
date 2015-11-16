@@ -17,6 +17,9 @@ float pocketRad = borderDepth * .5f;
 float ballRad = pocketRad * .65f;
 float stickLength = 5 * ballRad;
 float stickAngle;
+float e = 0.92; //coefficient of restitution
+float ballMass = 0.6; //oz?
+
 
 //Booleans
 bool menuShow = true;
@@ -26,6 +29,7 @@ bool twoPlayerGame = false;
 bool playerAim = false;
 bool programExit = false;
 bool gameQuit = false;
+bool isColliding = false;
 
 //Objects
 sf::RenderWindow BILLIARDS(sf::VideoMode(WIDTH, HEIGHT, 64), "Billiards", sf::Style::Titlebar | sf::Style::Close);
@@ -200,6 +204,22 @@ void stickDraw()
 	stick.rotate(stickAngle);
 }
 
+bool detectCollision(Vector2f ball1, Vector2f ball2)
+{
+	float xd = ball1.getPosition().x - ball2.getPosition().x;
+	float yd = ball1.getPosition().y - ball2.getPosition().y;
+	float sqrRad = (2*ballRad) * (2*ballRad);
+	float sqrD = (xd*xd) + (yd*yd);
+	if (sqrD <= sqrRad)
+		return true;
+	else
+		return false;
+}
+
+bool resolveCollision(Vector2f ball1, Vector2f ball2)
+{
+	// we dont need to use momentum pala kasi same lang yung masses ng balls haha
+}
 
 int main()
 {
