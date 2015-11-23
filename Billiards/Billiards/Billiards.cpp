@@ -204,7 +204,8 @@ void stickDraw()
 	stick.rotate(stickAngle);
 }
 
-bool detectCollision(Vector2f ball1, Vector2f ball2)
+//Collision detection and resolution
+bool detectBallCollision(Vector2f ball1, Vector2f ball2)
 {
 	float xd = ball1.getPosition().x - ball2.getPosition().x;
 	float yd = ball1.getPosition().y - ball2.getPosition().y;
@@ -216,10 +217,80 @@ bool detectCollision(Vector2f ball1, Vector2f ball2)
 		return false;
 }
 
-bool resolveCollision(Vector2f ball1, Vector2f ball2)
+bool resolveBallCollision(Vector2f ball1, Vector2f ball2)
 {
-	// we dont need to use momentum pala kasi same lang yung masses ng balls haha
+    Vector col = ball1.position() - ball2.position();
+    double distance = getMag(col);
+    if (distance == 0.0) {
+        col = Vector(1.0, 0.0);
+        distance = 1.0;
+    }
+    if (distance > 1.0)
+        return;
+
+    col = Normalize(col);
+    double ball1vel = Dot(ball1.velocity, col);
+    double ball2vel = Dot(ball2.velocity, col);
+
+    //exchange velocity
+    double ball1newvel = ball2vel;
+    double ball2newvel = ball1vel;
+
+    ball1.velocity() += (ball1newvel - ball1vel) * col;
+    ball2.velocity() += (ball2newvel - ball2vel) * col;
 }
+//end of collision methods
+
+//Vector struct and methods
+struct Vector
+{
+	int X;
+	int Y;
+
+	Vector(int x, int y)
+	{
+		X = x;
+		Y = y;
+	}
+}
+
+int Dot(Vector u, Vector v)
+{
+	int dot = (u.X * u.Y) + (v.X * v.Y);
+	return dot;
+}
+
+int Cross(Vector u, Vector v)
+{
+	int cross = (u.X * v.Y) - (v.X * u.Y);
+	return cross;
+}
+
+int GetMag(Vector u)
+{
+	double magSqrdX = pow(u.X, 2);
+	double magSqrdY = pow(u.Y, 2);
+	double magSqrt = sqrt(magSqrdX + magSqrdY);
+	return magSqrt;
+}
+
+Vector Normalize(Vector u)
+{
+	int mag = GetMag(u);
+	int x = u.X / mag;
+	int y = u.Y / mag;
+	Vector v = Vector(x, y);
+	return v;
+}
+
+Vector Project(Vector u, Vector v)
+{
+	int proj = Dot(u, v) / pow(GetMag(v), 2);
+	Vector projection = Vector(v.X*proj, v.Y*proj);
+	return projection;
+}
+//end of vector methods
+
 
 int main()
 {
