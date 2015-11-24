@@ -8,22 +8,29 @@
 
 using namespace std;
 
-
 //Dimensions
+const float pi = 3.14159f;
 float WIDTH = 800.f;
 float HEIGHT = WIDTH / 2;
 float borderDepth = WIDTH / 25;
 float pocketRad = borderDepth * .5f;
 float ballRad = pocketRad * .65f;
-float stickLength = 5 * ballRad;
-float stickAngle;
+float aimLength = 0;
+float aimAngle = 0;
+float wBallSpeed = 0;
+
+float borderTop = borderDepth;
+float borderBot = HEIGHT - borderDepth;
+float borderLeft = borderDepth;
+float borderRight = WIDTH - borderDepth;
 
 //Booleans
 bool menuShow = true;
 bool onePlayerGame = false;
-bool onePlayerGameStart = false;
+bool gameStart = false;
 bool twoPlayerGame = false;
-bool playerAim = false;
+bool playerIsAiming = false;
+bool ballIsMoving = false;
 bool programExit = false;
 bool gameQuit = false;
 
@@ -38,7 +45,8 @@ vector<sf::CircleShape> ballMarks(9);
 vector<sf::Text> ballNums(9);
 sf::CircleShape whiteBall;
 sf::RectangleShape stripe9;
-sf::RectangleShape stick;
+sf::Vertex aim[];
+
 
 //TitleMenu
 sf::Text title;
@@ -54,7 +62,7 @@ sf::Color orange(255, 128, 0);
 sf::Color maroon(128, 0, 0);
 sf::Color grey(125, 125, 125);
 
-void titleDraw()
+void titleMenuDraw()
 {
 	title.setFont(myFont);
 	title.setCharacterSize(WIDTH / 16);
@@ -91,11 +99,12 @@ void tableDraw()
 	sf::Vector2f matSize(WIDTH - 2 * borderDepth, HEIGHT - 2 * borderDepth);
 	float borderPosX[4] = {0.f, 0.f, 0.f, WIDTH - borderDepth};
 	float borderPosY[4] = {0.f, HEIGHT - borderDepth, 0.f, 0.f};
-	float pocketPosX[3] = {borderDepth, WIDTH / 2, WIDTH - borderDepth};
-	float pocketPosY[2] = {borderDepth, HEIGHT - borderDepth};
+	float pocketPosX[3] = {borderLeft, WIDTH / 2, borderRight};
+	float pocketPosY[2] = {borderTop, borderBot};
 	
 	mat.setSize(matSize);
-	mat.setPosition(borderDepth, borderDepth);
+	mat.setOrigin(matSize.x / 2, matSize.y / 2);
+	mat.setPosition(WIDTH/2, HEIGHT/2);
 	mat.setFillColor(darkGreen);
 
 	for (int i = 0; i < 4; i++)
@@ -113,10 +122,19 @@ void tableDraw()
 		pockets[i].setRadius(pocketRad);
 		pockets[i].setOrigin(pocketRad, pocketRad);
 		pockets[i].setFillColor(sf::Color::Black);
-		pockets[i].setPosition(pocketPosX[i % 3], pocketPosY[i % 2]);
 		pockets[i].setOutlineColor(sf::Color::Black);
 		pockets[i].setOutlineThickness(1);
-	}	
+	}
+
+	int k = 0;
+	for (int i = 0; i < 3; i++)
+	{ 
+		for (int j = 0; j < 2; j++)
+		{
+			pockets[k].setPosition(pocketPosX[i], pocketPosY[j]);
+			k = k + 1;
+		}
+	}
 }
 
 void ballsDraw()
@@ -189,18 +207,6 @@ void startup()
 
 }
 
-void stickDraw()
-{
-	sf::Vector2f stickSize(stickLength, ballRad / 2);
-	stick.setSize(stickSize);
-	stick.setOrigin(0, stick.getSize().y / 2);
-	stick.setFillColor(brown);
-	stick.setOutlineThickness(1);
-	stick.setOutlineColor(sf::Color::Black);
-	stick.rotate(stickAngle);
-}
-
-
 int main()
 {
 
@@ -229,8 +235,8 @@ int main()
 			BILLIARDS.draw(ballNums[i]);
 		}
 
-		//MENU
-		titleDraw();
+		//TITLE MENU
+		titleMenuDraw();
 		BILLIARDS.draw(title);
 		for (int i = 0; i < menuRect.size(); i++)
 		{
@@ -250,28 +256,24 @@ int main()
 			{
 				if (event.type == sf::Event::Closed)
 					BILLIARDS.close();
-				if (event.type == sf::Event::MouseButtonPressed)
+				if (event.mouseButton.button == sf::Mouse::Left && event.type == sf::Event::MouseButtonReleased)
 				{
 					bool menuCommandActivate[] = { false, false, false };
-
-					if (event.mouseButton.button == sf::Mouse::Left)
+					for (int i = 0; i < menuRect.size(); i++)
 					{
-						for (int i = 0; i < menuRect.size(); i++)
+						if (abs(event.mouseButton.x - menuRect[i].getPosition().x) < menuRect[i].getSize().x / 2)
 						{
-							if (abs(event.mouseButton.x - menuRect[i].getPosition().x) < menuRect[i].getSize().x / 2)
-							{
-								if (abs(event.mouseButton.y - menuRect[i].getPosition().y) < menuRect[i].getSize().y / 2)
-									menuCommandActivate[i] = true;
-							}
+							if (abs(event.mouseButton.y - menuRect[i].getPosition().y) < menuRect[i].getSize().y / 2)
+								menuCommandActivate[i] = true;
 						}
-						if (menuCommandActivate[0])
-						{
-							onePlayerGame = true;
-							onePlayerGameStart = true;
-						}
-						if (menuCommandActivate[2])
-							programExit = true;
 					}
+					if (menuCommandActivate[0])
+					{
+						onePlayerGame = true;
+						gameStart = true;
+					}
+					if (menuCommandActivate[2])
+						programExit = true;
 				}
 			}
 
@@ -281,27 +283,42 @@ int main()
 				{
 					if (event.type == sf::Event::Closed)
 						BILLIARDS.close();
+					if (event.key.code == sf::Keyboard::Space && event.type == event.KeyReleased)
+					{
+						if (gameStart)
+						{
+							gameStart = false;
+							playerIsAiming = true;
+						}
+						else if (playerIsAiming)
+						{
+							wBallSpeed = aimLength / 5;
+							playerIsAiming = false;
+							ballIsMoving = true;
+						}
+					}
 				}
-				if (onePlayerGameStart)
+				if (gameStart)
 				{
 					whiteBall.setPosition(sf::Mouse::getPosition(BILLIARDS).x, sf::Mouse::getPosition(BILLIARDS).y);
-					if (sf::Mouse::getPosition(BILLIARDS).x > borderDepth + mat.getSize().x / 4)
-						whiteBall.setPosition(borderDepth + mat.getSize().x / 4, sf::Mouse::getPosition(BILLIARDS).y);
-					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+					if (whiteBall.getPosition().x > mat.getPosition().x - mat.getSize().x / 4 - ballRad)
+						whiteBall.setPosition(mat.getPosition().x - mat.getSize().x / 4 - ballRad, whiteBall.getPosition().y);
+					if (whiteBall.getPosition().x < borderLeft + ballRad)
+						whiteBall.setPosition(borderLeft + ballRad, whiteBall.getPosition().y);
+					if (whiteBall.getPosition().y < borderTop + ballRad)
+						whiteBall.setPosition(whiteBall.getPosition().x, borderTop + ballRad);
+					if (whiteBall.getPosition().y > borderBot - ballRad)
+						whiteBall.setPosition(whiteBall.getPosition().x, borderBot - ballRad);
+
+					for (int i = 0; i < 2; i++)
 					{
-						onePlayerGameStart = false;
-						playerAim = true;
+						if ((abs(whiteBall.getPosition().x - pockets[i].getPosition().x) < ballRad + pocketRad) && (abs(whiteBall.getPosition().y - pockets[i].getPosition().y) < ballRad + pocketRad))
+						{
+							whiteBall.setPosition(pockets[i].getPosition().x + (pocketRad + ballRad) * cos(atan2f(whiteBall.getPosition().y - pockets[i].getPosition().y, whiteBall.getPosition().x - pockets[i].getPosition().x)), pockets[i].getPosition().y + (pocketRad + ballRad) * sin(atan2f(whiteBall.getPosition().y - pockets[i].getPosition().y, whiteBall.getPosition().x - pockets[i].getPosition().x)));
+						}
 					}
 				}
 
-				if (playerAim)
-				{
-					stickAngle = atan2f(whiteBall.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y, whiteBall.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x);
-					stickDraw();
-					stick.setPosition(whiteBall.getPosition().x - stick.getSize().x * cos(stickAngle), whiteBall.getPosition().y - stick.getSize().y * sin(stickAngle));
-				}
-
-				BILLIARDS.draw(stick);
 				BILLIARDS.draw(mat);
 				for (int i = 0; i < borders.size(); i++) { BILLIARDS.draw(borders[i]); }
 				for (int i = 0; i < pockets.size(); i++) { BILLIARDS.draw(pockets[i]); }
@@ -315,6 +332,59 @@ int main()
 					BILLIARDS.draw(ballMarks[i]);
 					BILLIARDS.draw(ballNums[i]);
 				}
+
+
+				if (playerIsAiming)
+				{
+					aimAngle = atan2f(whiteBall.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y, whiteBall.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x);
+					aimLength = sqrt((whiteBall.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) *(whiteBall.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) + (whiteBall.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y) * (whiteBall.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y));
+
+					if (aimLength > 100) { aimLength = 100; }
+
+					sf::Vector2f aimOrigin(whiteBall.getPosition());
+					sf::Vector2f aimXY(aimLength * cos(aimAngle), aimLength  * sin(aimAngle));
+					sf::Vector2f arrwXY1(3 * aimLength / 10  * cos(aimAngle - 5 * pi /6), 3 * aimLength / 10 * sin(aimAngle - 5 * pi /6));
+					sf::Vector2f arrwXY2 (3 * aimLength / 10  * cos(aimAngle - 7 * pi / 6), 3 * aimLength / 10 * sin(aimAngle - 7 * pi / 6));
+
+
+					sf::Vertex aim[] =
+					{
+						sf::Vertex(aimOrigin),
+						sf::Vertex(aimOrigin + aimXY)
+					};
+
+					sf::Vertex arrw1[] =
+					{
+						sf::Vertex(aimOrigin + aimXY),
+						sf::Vertex(aimOrigin + aimXY + arrwXY1)
+					}; 
+
+					sf::Vertex arrw2[] =
+					{
+						sf::Vertex(aimOrigin + aimXY),
+						sf::Vertex(aimOrigin + aimXY + arrwXY2)
+					};
+
+					BILLIARDS.draw(aim, 2, sf::Lines);
+					BILLIARDS.draw(arrw1, 2, sf::Lines);
+					BILLIARDS.draw(arrw2, 2, sf::Lines);
+					
+				}
+
+				
+				if (ballIsMoving)
+				{
+					float wBallVelocityX = wBallSpeed * cos(aimAngle);
+					float wBallVelocityY = wBallSpeed * sin(aimAngle);
+					whiteBall.move(wBallVelocityX, wBallVelocityY);
+					wBallSpeed = wBallSpeed - 0.1;
+					if (wBallSpeed < 0)
+					{
+						ballIsMoving = false;
+						playerIsAiming = true;
+					}
+				}
+
 				BILLIARDS.display();
 				BILLIARDS.clear();
 			}
