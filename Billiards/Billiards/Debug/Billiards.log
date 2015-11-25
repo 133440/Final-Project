@@ -1,27 +1,26 @@
-﻿Build started 11/24/2015 8:55:07 PM.
+﻿Build started 11/25/2015 6:11:19 PM.
      1>Project "C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Billiards\Billiards.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /I"SFML-2.3.2/include" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"stdafx.h" /Fp"Debug\Billiards.pch" /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt Billiards.cpp
          Billiards.cpp
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(38): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(68): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(78): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(142): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(149): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(150): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(158): warning C4244: 'argument': conversion from 'unsigned int' to 'float', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(170): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(199): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(222): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(223): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(227): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(241): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(262): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(303): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(323): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(324): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(325): warning C4018: '<': signed/unsigned mismatch
-     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(380): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(41): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(71): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(81): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(145): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(152): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(153): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(161): warning C4244: 'argument': conversion from 'unsigned int' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(173): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(205): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(228): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(229): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(233): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(247): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(268): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(309): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(329): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(330): warning C4018: '<': signed/unsigned mismatch
+     1>c:\users\sef.remollo\desktop\cs179.14a\billiards\billiards\billiards.cpp(331): warning C4018: '<': signed/unsigned mismatch
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.exe" /INCREMENTAL /NOLOGO /LIBPATH:"SFML-2.3.2/lib" "sfml-graphics-d.lib" "sfml-window-d.lib" "sfml-system-d.lib" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /PDB:"C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\sef.remollo\Desktop\CS179.14A\Billiards\Debug\Billiards.lib" /MACHINE:X86 Debug\Billiards.obj
          Debug\stdafx.obj
@@ -30,4 +29,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:03.60
+Time Elapsed 00:00:03.74

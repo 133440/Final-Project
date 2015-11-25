@@ -12,12 +12,15 @@ using namespace std;
 const float pi = 3.14159f;
 float WIDTH = 800.f;
 float HEIGHT = WIDTH / 2;
+float FPS = 30;
+float SPF = 1 / FPS;
 float borderDepth = WIDTH / 25;
 float pocketRad = borderDepth * .5f;
 float ballRad = pocketRad * .65f;
 float aimLength = 0;
 float aimAngle = 0;
 float wBallSpeed = 0;
+float frictionForce = FPS / 300;
 
 float borderTop = borderDepth;
 float borderBot = HEIGHT - borderDepth;
@@ -178,6 +181,9 @@ void ballsDraw()
 	whiteBall.setOutlineColor(sf::Color::Black);
 }
 
+void collisionDetection()
+{}
+
 void startup()
 {
 	ballsDraw();
@@ -292,7 +298,7 @@ int main()
 						}
 						else if (playerIsAiming)
 						{
-							wBallSpeed = aimLength / 5;
+							wBallSpeed = aimLength * 6 / FPS;
 							playerIsAiming = false;
 							ballIsMoving = true;
 						}
@@ -371,20 +377,18 @@ int main()
 					
 				}
 
-				
 				if (ballIsMoving)
 				{
 					float wBallVelocityX = wBallSpeed * cos(aimAngle);
 					float wBallVelocityY = wBallSpeed * sin(aimAngle);
 					whiteBall.move(wBallVelocityX, wBallVelocityY);
-					wBallSpeed = wBallSpeed - 0.1;
+					wBallSpeed = wBallSpeed - frictionForce;
 					if (wBallSpeed < 0)
 					{
 						ballIsMoving = false;
 						playerIsAiming = true;
 					}
 				}
-
 				BILLIARDS.display();
 				BILLIARDS.clear();
 			}
