@@ -8,8 +8,28 @@
 
 using namespace std;
 
+class Balls
+{
+public:
+	Balls();
+	sf::CircleShape main;
+	sf::CircleShape mark;
+	sf::RectangleShape stripe;
+	sf::Text num;
+	float speed;
+	float vx;
+	float vy;
+	float angle;
+	bool isPocketed;
+};
+
+Balls::Balls()
+{
+};
+
 //Dimensions
 const float pi = 3.14159f;
+const int numBalls = 10;
 int WIDTH = 800;
 int HEIGHT = WIDTH / 2;
 float FPS = 30;
@@ -26,6 +46,7 @@ float borderTop = borderDepth;
 float borderBot = HEIGHT - borderDepth;
 float borderLeft = borderDepth;
 float borderRight = WIDTH - borderDepth;
+
 
 //Booleans
 bool menuShow = true;
@@ -44,6 +65,8 @@ sf::RectangleShape mat;
 vector<sf::CircleShape> pockets(6);
 vector<sf::RectangleShape> borders(4);
 sf::Vertex aim[];
+Balls a, b, c, d, e, f, g, h, i, j;
+Balls ball[numBalls] = { a, b, c, d, e, f, g, h, i, j };
 
 
 //TitleMenu
@@ -60,29 +83,9 @@ sf::Color orange(255, 128, 0);
 sf::Color maroon(128, 0, 0);
 sf::Color grey(125, 125, 125);
 
-class Balls
-{
-public:
-	Balls( );
-	sf::CircleShape main;
-	sf::CircleShape mark;
-	sf::RectangleShape stripe;
-	sf::Text ballNum;
-	float speed;
-	float angle;
-	bool isPocketed;
-	bool isMoving;
-};
-
-Balls::Balls()
-{};
-
-Balls a, b, c, d, e, f, g, h, i, j;
-Balls ball[10] = {a, b, c, d, e, f, g, h, i, j};
-
 void ballsDraw()
 {
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < numBalls; i++)
 	{
 		ball[i].main.setRadius(ballRad);
 		ball[i].main.setOrigin(ballRad, ballRad);
@@ -92,13 +95,13 @@ void ballsDraw()
 		{
 			ball[i].mark.setRadius(ballRad * .5f);
 			ball[i].mark.setOrigin(ballRad * .5f, ballRad * .5f);
-			string ballNum = to_string(i);
-			ball[i].ballNum.setFont(myFont);
-			ball[i].ballNum.setCharacterSize(6);
-			ball[i].ballNum.setStyle(sf::Text::Regular);
-			ball[i].ballNum.setColor(sf::Color::Black);
-			ball[i].ballNum.setString(ballNum);
-			ball[i].ballNum.setOrigin(ball[i].ballNum.getCharacterSize() / 2.f, ball[i].ballNum.getCharacterSize() / 2.f);
+			string num = to_string(i);
+			ball[i].num.setFont(myFont);
+			ball[i].num.setCharacterSize(6);
+			ball[i].num.setStyle(sf::Text::Regular);
+			ball[i].num.setColor(sf::Color::Black);
+			ball[i].num.setString(num);
+			ball[i].num.setOrigin(ball[i].num.getCharacterSize() / 2.f, ball[i].num.getCharacterSize() / 2.f);
 
 			switch (i)
 			{
@@ -241,13 +244,13 @@ void startup()
 	c = y + 1 * ballRad;
 	d = y + 2 * ballRad;
 	float ballPosY[9] = { y, b, c, a, y, d, b, c, y };
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < numBalls; i++)
 	{
 		if (i != 0)
 		{
 			ball[i].main.setPosition(ballPosX[i - 1], ballPosY[i - 1]);
 			ball[i].mark.setPosition(ball[i].main.getPosition());
-			ball[i].ballNum.setPosition(ball[i].main.getPosition());
+			ball[i].num.setPosition(ball[i].main.getPosition());
 			ball[i].stripe.setPosition(ball[i].main.getPosition());
 
 			BILLIARDS.draw(ball[i].main);
@@ -256,13 +259,52 @@ void startup()
 				BILLIARDS.draw(ball[i].stripe);
 			}
 			BILLIARDS.draw(ball[i].mark);
-			BILLIARDS.draw(ball[i].ballNum);
+			BILLIARDS.draw(ball[i].num);
 		}
 	}
 	ball[0].main.setPosition(WIDTH / 4.f, HEIGHT / 2.f);
 	BILLIARDS.draw(ball[0].main);
 }
 
+void ballCollision(int a, int b)
+{
+	
+	float xd = ball[a].main.getPosition().x - ball[b].main.getPosition().x;
+	float yd = ball[a].main.getPosition().y - ball[b].main.getPosition().y;
+	float sqrRad = (2 * ballRad) * (2 * ballRad);
+	float sqrD = (xd*xd) + (yd*yd);
+	if (sqrD < sqrRad)
+	{
+		
+	}
+}
+
+void wallCollision(int a)
+{
+	if (ball[a].main.getPosition().x >= borderRight - ballRad)
+	{
+		ball[a].main.setPosition(borderRight - ballRad, ball[a].main.getPosition().y);
+		ball[a].angle = -ball[a].angle + pi;
+	}
+	if (ball[a].main.getPosition().x <= borderLeft + ballRad)
+	{
+		ball[a].main.setPosition(borderLeft + ballRad, ball[a].main.getPosition().y);
+		ball[a].angle = -ball[a].angle + pi;
+	}
+	if (ball[a].main.getPosition().y <= borderTop + ballRad)
+	{
+		ball[a].main.setPosition(ball[a].main.getPosition().x, borderTop + ballRad);
+		ball[a].angle = -ball[a].angle;
+	}
+	if (ball[a].main.getPosition().y >= borderBot - ballRad)
+	{
+		ball[a].main.setPosition(ball[a].main.getPosition().x, borderBot - ballRad);
+		ball[a].angle = -ball[a].angle;
+	}
+}
+
+
+///////////////////////////////////////////////////////Main//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main()
 {
 
@@ -354,28 +396,29 @@ int main()
 				BILLIARDS.draw(mat);
 				for (int i = 0; i < borders.size(); i++) { BILLIARDS.draw(borders[i]); }
 				for (int i = 0; i < pockets.size(); i++) { BILLIARDS.draw(pockets[i]); }
-				for (int i = 0; i < 11; i++) {
+				for (int i = 0; i < numBalls; i++)
+				{
 					BILLIARDS.draw(ball[i].main);
 					if (i == 9)
 					{
 						BILLIARDS.draw(ball[i].stripe);
 					}
 					BILLIARDS.draw(ball[i].mark);
-					BILLIARDS.draw(ball[i].ballNum);
+					BILLIARDS.draw(ball[i].num);
 				}
 
 
 				if (playerIsAiming)
 				{
 					aimAngle = atan2f(ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y, ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x);
-					aimLength = sqrt((ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) *(ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) + (ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y) * (ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y));
+					aimLength = sqrt((ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) * (ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) + (ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y) * (ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y));
 
 					if (aimLength > 100) { aimLength = 100; }
 
 					sf::Vector2f aimOrigin(ball[0].main.getPosition());
 					sf::Vector2f aimXY(aimLength * cos(aimAngle), aimLength  * sin(aimAngle));
-					sf::Vector2f arrwXY1(3 * aimLength / 10  * cos(aimAngle - 5 * pi /6), 3 * aimLength / 10 * sin(aimAngle - 5 * pi /6));
-					sf::Vector2f arrwXY2 (3 * aimLength / 10  * cos(aimAngle - 7 * pi / 6), 3 * aimLength / 10 * sin(aimAngle - 7 * pi / 6));
+					sf::Vector2f arrwXY1(3 * aimLength / 10 * cos(aimAngle - 5 * pi / 6), 3 * aimLength / 10 * sin(aimAngle - 5 * pi / 6));
+					sf::Vector2f arrwXY2(3 * aimLength / 10 * cos(aimAngle - 7 * pi / 6), 3 * aimLength / 10 * sin(aimAngle - 7 * pi / 6));
 
 
 					sf::Vertex aim[] =
@@ -388,7 +431,7 @@ int main()
 					{
 						sf::Vertex(aimOrigin + aimXY),
 						sf::Vertex(aimOrigin + aimXY + arrwXY1)
-					}; 
+					};
 
 					sf::Vertex arrw2[] =
 					{
@@ -399,16 +442,39 @@ int main()
 					BILLIARDS.draw(aim, 2, sf::Lines);
 					BILLIARDS.draw(arrw1, 2, sf::Lines);
 					BILLIARDS.draw(arrw2, 2, sf::Lines);
-					
+
 				}
 
 				if (gameIsMoving)
 				{
-					float wBallVelocityX = ball[0].speed * cos(ball[0].angle);
-					float wBallVelocityY = ball[0].speed * sin(ball[0].angle);
-					ball[0].main.setPosition(ball[0].main.getPosition().x + wBallVelocityX * gameTime, ball[0].main.getPosition().y + wBallVelocityY * gameTime);
+					ball[0].vx = ball[0].speed * cos(ball[0].angle);
+					ball[0].vy = ball[0].speed * sin(ball[0].angle);
+					ball[0].main.setPosition(ball[0].main.getPosition().x + ball[0].vx * gameTime, ball[0].main.getPosition().y + ball[0].vy * gameTime);
 					ball[0].speed = ball[0].speed - frictionForce;
-					if (ball[0].speed < 0)
+					
+					for (int i = 0; i < numBalls; i++)
+					{
+						if (ball[i].speed < 0)
+							ball[i].speed = 0;
+						for (int j = 0; j < 11; j++)
+						{
+							if (i != j)
+								ballCollision(i, j);
+						}
+						wallCollision(i);
+					}
+
+					bool noBallMoving = true;
+
+					for (int i = 0; i < numBalls; i++)
+					{
+						if (ball[i].speed > 0)
+						{
+							noBallMoving = false;
+						}
+					}
+
+					if (noBallMoving)
 					{
 						gameIsMoving = false;
 						playerIsAiming = true;
@@ -417,12 +483,11 @@ int main()
 				BILLIARDS.display();
 				BILLIARDS.clear();
 			}
-
+		}
+		if (programExit)
+		{
+			return 0;
 		}
 	}
-	if (programExit)
-	{
-		return 0;
-	}
-}
 
+}
