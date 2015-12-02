@@ -21,6 +21,7 @@ public:
 	float vy;
 	float angle;
 	bool isPocketed;
+	int collidedWith[9];
 };
 
 Balls::Balls()
@@ -29,7 +30,7 @@ Balls::Balls()
 
 //Dimensions
 const float pi = 3.14159f;
-const int numBalls = 10;
+int numBalls = 2;
 int WIDTH = 800;
 int HEIGHT = WIDTH / 2;
 float FPS = 30;
@@ -40,7 +41,8 @@ float pocketRad = borderDepth * .5f;
 float ballRad = pocketRad * .65f;
 float aimLength = 0;
 float aimAngle = 0;
-float frictionForce = .001f * gameSpeed;
+float aimStandardForce = .8 * .001f * gameSpeed;
+float frictionForce = 1 * .001f * gameSpeed;
 
 float borderTop = borderDepth;
 float borderBot = HEIGHT - borderDepth;
@@ -54,6 +56,7 @@ bool onePlayerGame = false;
 bool gameStart = false;
 bool twoPlayerGame = false;
 bool playerIsAiming = false;
+bool playerMovesBall = false;
 bool gameIsMoving = false;
 bool programExit = false;
 bool gameQuit = false;
@@ -66,13 +69,13 @@ vector<sf::CircleShape> pockets(6);
 vector<sf::RectangleShape> borders(4);
 sf::Vertex aim[];
 Balls a, b, c, d, e, f, g, h, i, j;
-Balls ball[numBalls] = { a, b, c, d, e, f, g, h, i, j };
+Balls ball[10] = { a, b, c, d, e, f, g, h, i, j };
 
 
 //TitleMenu
 sf::Text title;
-vector<sf::RectangleShape> menuRect(3);
-vector<sf::Text> menuText(3);
+vector<sf::RectangleShape> menuRect(2);
+vector<sf::Text> menuText(2);
 
 //Colors
 sf::Color brown(54, 18, 8);
@@ -151,7 +154,7 @@ void menu()
 	title.setPosition(WIDTH / 2, 3 * HEIGHT / 16);
 
 	sf::Vector2f menuRectSize(3 * WIDTH / 16, HEIGHT / 8);
-	string menuCommands[3] = { "1 Player", "2 Player", "Exit" };
+	string menuCommands[2] = { "Play", "Exit" };
 
 	for (int i = 0; i < menuRect.size(); i++)
 	{
@@ -226,7 +229,7 @@ void table()
 	for (int i = 0; i < pockets.size(); i++) { BILLIARDS.draw(pockets[i]); }
 }
 
-void startup()
+void setup()
 {
 	ballsDraw();
 	sf::Vector2f ballBlockPos(3 * WIDTH / 4.f, HEIGHT / 2.f);
@@ -266,16 +269,45 @@ void startup()
 	BILLIARDS.draw(ball[0].main);
 }
 
-void ballCollision(int a, int b)
+void ballCollision(int a)
 {
-	
-	float xd = ball[a].main.getPosition().x - ball[b].main.getPosition().x;
-	float yd = ball[a].main.getPosition().y - ball[b].main.getPosition().y;
-	float sqrRad = (2 * ballRad) * (2 * ballRad);
-	float sqrD = (xd*xd) + (yd*yd);
-	if (sqrD < sqrRad)
+	for (int b = 0; b < numBalls; b++)
 	{
-		
+		if (a != b)
+		{
+			sf::Vector2f col = ball[a].main.getPosition() - ball[b].main.getPosition();
+			float d = sqrt(col.x * col.x + col.y * col.y);
+			if (d < 2 * ballRad)
+			{
+				if (ball[a].collidedWith[0] == NULL)
+				{
+					ball[a].collidedWith[0] = b;
+					ball[b].collidedWith[0] = a;
+
+					col.x = col.x / d;
+					col.y = col.y / d;
+
+					float ballavel = ball[a].vx * col.x + ball[a].vy * col.y;
+					float ballbvel = ball[b].vx * col.x + ball[b].vy * col.y;
+					
+					ball[a].vx = (ballavel - (ballavel - ballbvel) * col.x);
+					ball[a].vy = (ballavel - (ballavel - ballbvel) * col.y);
+					ball[b].vx = (ballbvel - (ballbvel - ballavel) * col.x);
+					ball[b].vy = (ballbvel - (ballbvel - ballavel) * col.y);
+
+					ball[a].speed = sqrt(ball[a].vx * ball[a].vx + ball[a].vy * ball[a].vy);
+					ball[b].speed = sqrt(ball[b].vx * ball[b].vx + ball[b].vy * ball[b].vy);
+					ball[a].angle = atan2f(ball[a].vy, ball[a].vx);
+					ball[b].angle = atan2f(ball[b].vy, ball[b].vx);
+				}
+			}
+			else
+			{
+				ball[a].collidedWith[0] = NULL;
+				ball[b].collidedWith[0] = NULL;
+			}
+
+		}
 	}
 }
 
@@ -303,6 +335,18 @@ void wallCollision(int a)
 	}
 }
 
+void pocketCheck(int i)
+{
+	for (int j = 0; j < pockets.size(); j++)
+	{
+		if (sqrt(pow(ball[i].main.getPosition().x - pockets[j].getPosition().x, 2) + pow(ball[i].main.getPosition().y - pockets[j].getPosition().y, 2)) < ballRad + pocketRad)
+		{
+			ball[i].isPocketed = true;
+			ball[i].speed = 0;
+		}
+	}
+}
+
 
 ///////////////////////////////////////////////////////Main//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main()
@@ -314,7 +358,6 @@ int main()
 	while (!programExit)
 	{
 		table();
-		startup();
 		menu();
 		BILLIARDS.display();
 
@@ -343,8 +386,9 @@ int main()
 					{
 						onePlayerGame = true;
 						gameStart = true;
+						setup();
 					}
-					if (menuCommandActivate[2])
+					if (menuCommandActivate[1])
 						programExit = true;
 				}
 			}
@@ -366,10 +410,16 @@ int main()
 						else if (playerIsAiming)
 						{
 							ball[0].angle = aimAngle;
-							ball[0].speed = aimLength * .001f * 1.5f * gameSpeed;
+							ball[0].speed = aimLength * aimStandardForce;
 							playerIsAiming = false;
 							gameIsMoving = true;
 						}
+						else if (playerMovesBall)
+						{
+							playerMovesBall = false;
+							playerIsAiming = true;
+						}
+						
 					}
 				}
 				if (gameStart)
@@ -398,15 +448,48 @@ int main()
 				for (int i = 0; i < pockets.size(); i++) { BILLIARDS.draw(pockets[i]); }
 				for (int i = 0; i < numBalls; i++)
 				{
-					BILLIARDS.draw(ball[i].main);
-					if (i == 9)
+					if (!ball[i].isPocketed)
 					{
-						BILLIARDS.draw(ball[i].stripe);
+						BILLIARDS.draw(ball[i].main);
+						if (i == 9)
+						{
+							BILLIARDS.draw(ball[i].stripe);
+						}
+						BILLIARDS.draw(ball[i].mark);
+						BILLIARDS.draw(ball[i].num);
 					}
-					BILLIARDS.draw(ball[i].mark);
-					BILLIARDS.draw(ball[i].num);
 				}
 
+				if (playerMovesBall)
+				{
+					ball[0].isPocketed = false;
+
+					ball[0].main.setPosition(sf::Mouse::getPosition(BILLIARDS).x, sf::Mouse::getPosition(BILLIARDS).y);
+					if (ball[0].main.getPosition().x > borderRight - ballRad)
+						ball[0].main.setPosition(mat.getPosition().x - mat.getSize().x / 4 - ballRad, ball[0].main.getPosition().y);
+					if (ball[0].main.getPosition().x < borderLeft + ballRad)
+						ball[0].main.setPosition(borderLeft + ballRad, ball[0].main.getPosition().y);
+					if (ball[0].main.getPosition().y < borderTop + ballRad)
+						ball[0].main.setPosition(ball[0].main.getPosition().x, borderTop + ballRad);
+					if (ball[0].main.getPosition().y > borderBot - ballRad)
+						ball[0].main.setPosition(ball[0].main.getPosition().x, borderBot - ballRad);
+
+					for (int i = 0; i < 2; i++)
+					{
+						if ((abs(ball[0].main.getPosition().x - pockets[i].getPosition().x) < ballRad + pocketRad) && (abs(ball[0].main.getPosition().y - pockets[i].getPosition().y) < ballRad + pocketRad))
+						{
+							ball[0].main.setPosition(pockets[i].getPosition().x + (pocketRad + ballRad) * cos(atan2f(ball[0].main.getPosition().y - pockets[i].getPosition().y, ball[0].main.getPosition().x - pockets[i].getPosition().x)), pockets[i].getPosition().y + (pocketRad + ballRad) * sin(atan2f(ball[0].main.getPosition().y - pockets[i].getPosition().y, ball[0].main.getPosition().x - pockets[i].getPosition().x)));
+						}
+					}
+
+					for (int i = 1; i < numBalls; i++)
+					{
+						if ((abs(ball[0].main.getPosition().x - ball[i].main.getPosition().x) < ballRad * 2) && (abs(ball[0].main.getPosition().y - ball[i].main.getPosition().y) < ballRad * 2))
+						{
+							ball[0].main.setPosition(ball[i].main.getPosition().x + (2 * ballRad) * cos(atan2f(ball[0].main.getPosition().y - ball[i].main.getPosition().y, ball[0].main.getPosition().x - ball[i].main.getPosition().x)), ball[i].main.getPosition().y + (2 * ballRad) * sin(atan2f(ball[0].main.getPosition().y - ball[i].main.getPosition().y, ball[0].main.getPosition().x - ball[i].main.getPosition().x)));
+						}
+					}
+				}
 
 				if (playerIsAiming)
 				{
@@ -446,24 +529,33 @@ int main()
 				}
 
 				if (gameIsMoving)
-				{
-					ball[0].vx = ball[0].speed * cos(ball[0].angle);
-					ball[0].vy = ball[0].speed * sin(ball[0].angle);
-					ball[0].main.setPosition(ball[0].main.getPosition().x + ball[0].vx * gameTime, ball[0].main.getPosition().y + ball[0].vy * gameTime);
-					ball[0].speed = ball[0].speed - frictionForce;
-					
+				{	
 					for (int i = 0; i < numBalls; i++)
 					{
-						if (ball[i].speed < 0)
+						if (ball[i].speed <= 0)
 							ball[i].speed = 0;
-						for (int j = 0; j < 11; j++)
+						else
 						{
-							if (i != j)
-								ballCollision(i, j);
+							ballCollision(i);
 						}
 						wallCollision(i);
+						pocketCheck(i);
 					}
 
+					for (int i = 0; i < numBalls; i++)
+					{
+						ball[i].vx = ball[i].speed * cos(ball[i].angle);
+						ball[i].vy = ball[i].speed * sin(ball[i].angle);
+						ball[i].main.setPosition(ball[i].main.getPosition().x + ball[i].vx * gameTime, ball[i].main.getPosition().y + ball[i].vy * gameTime);
+						ball[i].speed = ball[i].speed - frictionForce;
+
+						if (i != 0)
+						{
+							ball[i].mark.setPosition(ball[i].main.getPosition());
+							ball[i].num.setPosition(ball[i].main.getPosition());
+							ball[i].stripe.setPosition(ball[i].main.getPosition());
+						}
+					}
 					bool noBallMoving = true;
 
 					for (int i = 0; i < numBalls; i++)
@@ -477,7 +569,42 @@ int main()
 					if (noBallMoving)
 					{
 						gameIsMoving = false;
-						playerIsAiming = true;
+						bool allIsPocketed = true;
+						for (int i = 1; i < numBalls; i++)
+						{
+							if (!ball[i].isPocketed)
+								allIsPocketed = false;
+						}
+						if (allIsPocketed)
+						{
+							if (ball[0].isPocketed)
+							{
+								ball[numBalls - 1].isPocketed = false;
+								ball[numBalls - 1].main.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
+								if (numBalls == 9)
+									ball[numBalls - 1].stripe.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
+								ball[numBalls - 1].mark.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
+								ball[numBalls - 1].num.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
+								playerMovesBall = true;
+							}
+							else
+							{
+								onePlayerGame = false;
+								menu();
+								for (int i = 0; i < numBalls; i++)
+								{
+									ball[i].isPocketed = false;
+									ball[i].speed = 0;
+								}
+							}
+						}
+						else
+						{
+							if (ball[0].isPocketed)
+								playerMovesBall = true;
+							else
+								playerIsAiming = true;
+						}
 					}
 				}
 				BILLIARDS.display();
