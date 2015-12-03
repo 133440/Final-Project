@@ -141,6 +141,20 @@ void ballsDraw()
 			}
 		}
 	}
+
+	for (int i = 0; i < numBalls; i++)
+	{
+		if (!ball[i].isPocketed)
+		{
+			BILLIARDS.draw(ball[i].main);
+			if (i == 9)
+			{
+				BILLIARDS.draw(ball[i].stripe);
+			}
+			BILLIARDS.draw(ball[i].mark);
+			BILLIARDS.draw(ball[i].num);
+		}
+	}
 }
 
 void menu()
@@ -247,6 +261,7 @@ void setup()
 	c = y + 1 * ballRad;
 	d = y + 2 * ballRad;
 	float ballPosY[9] = { y, b, c, a, y, d, b, c, y };
+	
 	for (int i = 0; i < numBalls; i++)
 	{
 		if (i != 0)
@@ -255,25 +270,17 @@ void setup()
 			ball[i].mark.setPosition(ball[i].main.getPosition());
 			ball[i].num.setPosition(ball[i].main.getPosition());
 			ball[i].stripe.setPosition(ball[i].main.getPosition());
-
-			BILLIARDS.draw(ball[i].main);
-			if (i == 9)
-			{
-				BILLIARDS.draw(ball[i].stripe);
-			}
-			BILLIARDS.draw(ball[i].mark);
-			BILLIARDS.draw(ball[i].num);
 		}
 	}
+
 	ball[0].main.setPosition(WIDTH / 4.f, HEIGHT / 2.f);
-	BILLIARDS.draw(ball[0].main);
 }
 
 void ballCollision(int a)
 {
 	for (int b = 0; b < numBalls; b++)
 	{
-		if (a != b)
+		if ((a != b) && (!ball[b].isPocketed))
 		{
 			sf::Vector2f col = ball[a].main.getPosition() - ball[b].main.getPosition();
 			float d = sqrt(col.x * col.x + col.y * col.y);
@@ -339,7 +346,7 @@ void pocketCheck(int i)
 {
 	for (int j = 0; j < pockets.size(); j++)
 	{
-		if (sqrt(pow(ball[i].main.getPosition().x - pockets[j].getPosition().x, 2) + pow(ball[i].main.getPosition().y - pockets[j].getPosition().y, 2)) < ballRad + pocketRad)
+		if (sqrt(pow(ball[i].main.getPosition().x - pockets[j].getPosition().x, 2) + pow(ball[i].main.getPosition().y - pockets[j].getPosition().y, 2)) < pocketRad)
 		{
 			ball[i].isPocketed = true;
 			ball[i].speed = 0;
@@ -357,10 +364,6 @@ int main()
 
 	while (!programExit)
 	{
-		table();
-		menu();
-		BILLIARDS.display();
-
 		sf::Clock clock;
 
 		while ((BILLIARDS.isOpen()) && (!programExit))
@@ -393,9 +396,14 @@ int main()
 				}
 			}
 
+			table();
+			menu();
+			BILLIARDS.display();
+			BILLIARDS.clear();
+
 			while (onePlayerGame)
 			{
-				int gameTime = clock.restart().asMilliseconds();
+				float gameTime = clock.restart().asMilliseconds();
 				while (BILLIARDS.pollEvent(event))
 				{
 					if (event.type == sf::Event::Closed)
@@ -442,23 +450,9 @@ int main()
 						}
 					}
 				}
-
-				BILLIARDS.draw(mat);
-				for (int i = 0; i < borders.size(); i++) { BILLIARDS.draw(borders[i]); }
-				for (int i = 0; i < pockets.size(); i++) { BILLIARDS.draw(pockets[i]); }
-				for (int i = 0; i < numBalls; i++)
-				{
-					if (!ball[i].isPocketed)
-					{
-						BILLIARDS.draw(ball[i].main);
-						if (i == 9)
-						{
-							BILLIARDS.draw(ball[i].stripe);
-						}
-						BILLIARDS.draw(ball[i].mark);
-						BILLIARDS.draw(ball[i].num);
-					}
-				}
+				
+				table();
+				ballsDraw();
 
 				if (playerMovesBall)
 				{
@@ -466,7 +460,7 @@ int main()
 
 					ball[0].main.setPosition(sf::Mouse::getPosition(BILLIARDS).x, sf::Mouse::getPosition(BILLIARDS).y);
 					if (ball[0].main.getPosition().x > borderRight - ballRad)
-						ball[0].main.setPosition(mat.getPosition().x - mat.getSize().x / 4 - ballRad, ball[0].main.getPosition().y);
+						ball[0].main.setPosition(borderRight - ballRad, ball[0].main.getPosition().y);
 					if (ball[0].main.getPosition().x < borderLeft + ballRad)
 						ball[0].main.setPosition(borderLeft + ballRad, ball[0].main.getPosition().y);
 					if (ball[0].main.getPosition().y < borderTop + ballRad)
@@ -474,7 +468,7 @@ int main()
 					if (ball[0].main.getPosition().y > borderBot - ballRad)
 						ball[0].main.setPosition(ball[0].main.getPosition().x, borderBot - ballRad);
 
-					for (int i = 0; i < 2; i++)
+					for (int i = 0; i < pockets.size(); i++)
 					{
 						if ((abs(ball[0].main.getPosition().x - pockets[i].getPosition().x) < ballRad + pocketRad) && (abs(ball[0].main.getPosition().y - pockets[i].getPosition().y) < ballRad + pocketRad))
 						{
@@ -532,14 +526,17 @@ int main()
 				{	
 					for (int i = 0; i < numBalls; i++)
 					{
-						if (ball[i].speed <= 0)
-							ball[i].speed = 0;
-						else
+						if (!ball[i].isPocketed)
 						{
-							ballCollision(i);
+							if (ball[i].speed <= 0)
+								ball[i].speed = 0;
+							else
+							{
+								ballCollision(i);
+							}
+							wallCollision(i);
+							pocketCheck(i);
 						}
-						wallCollision(i);
-						pocketCheck(i);
 					}
 
 					for (int i = 0; i < numBalls; i++)
@@ -581,7 +578,7 @@ int main()
 							{
 								ball[numBalls - 1].isPocketed = false;
 								ball[numBalls - 1].main.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
-								if (numBalls == 9)
+								if (numBalls == 10)
 									ball[numBalls - 1].stripe.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
 								ball[numBalls - 1].mark.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
 								ball[numBalls - 1].num.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
@@ -590,7 +587,6 @@ int main()
 							else
 							{
 								onePlayerGame = false;
-								menu();
 								for (int i = 0; i < numBalls; i++)
 								{
 									ball[i].isPocketed = false;
