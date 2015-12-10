@@ -1,10 +1,12 @@
 #include "stdafx.h" //remove before submitting
 #include <iostream>
+#include <sstream>
 #include <SFML/System.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/graphics.hpp>
 #include <cstdlib>
 #include <cmath>
+#include <fstream>
 
 using namespace std;
 
@@ -16,12 +18,8 @@ public:
 	sf::CircleShape mark;
 	sf::RectangleShape stripe;
 	sf::Text num;
-	float speed;
-	float vx;
-	float vy;
-	float angle;
+	sf::Vector2f velocity;
 	bool isPocketed;
-	int collidedWith[9];
 };
 
 Balls::Balls()
@@ -30,19 +28,27 @@ Balls::Balls()
 
 //Dimensions
 const float pi = 3.14159f;
-int numBalls = 2;
+int numBalls = 10;
 int WIDTH = 800;
 int HEIGHT = WIDTH / 2;
 float FPS = 30;
 float gameSpeed = 10;
 float SPF = 1 / FPS;
+const sf::Vector2f zero(0, 0);
+
 float borderDepth = WIDTH / 25;
 float pocketRad = borderDepth * .5f;
+sf::Vector2f pocket2Size(pocketRad * 2, pocketRad);
 float ballRad = pocketRad * .65f;
 float aimLength = 0;
+float aimMax = 100;
 float aimAngle = 0;
 float aimStandardForce = .8 * .001f * gameSpeed;
-float frictionForce = 1 * .001f * gameSpeed;
+float frictionForce = .5 * .001f * gameSpeed;
+int firstHit;
+int ballToHit;
+int mover;
+int BS;
 
 float borderTop = borderDepth;
 float borderBot = HEIGHT - borderDepth;
@@ -53,29 +59,44 @@ float borderRight = WIDTH - borderDepth;
 //Booleans
 bool menuShow = true;
 bool onePlayerGame = false;
-bool gameStart = false;
 bool twoPlayerGame = false;
+bool gameStart = false;
 bool playerIsAiming = false;
 bool playerMovesBall = false;
 bool gameIsMoving = false;
 bool programExit = false;
 bool gameQuit = false;
+bool justGotPocketed = false;
+bool pauseGame = false;
+bool pause1P = false;
+bool pause2P = false;
+bool noBallMoving = false;
 
 //Objects
 sf::RenderWindow BILLIARDS(sf::VideoMode(WIDTH, HEIGHT, 64), "Billiards", sf::Style::Titlebar | sf::Style::Close);
 sf::Font myFont;
 sf::RectangleShape mat;
 vector<sf::CircleShape> pockets(6);
+vector<sf::RectangleShape> pockets2(6);
 vector<sf::RectangleShape> borders(4);
 sf::Vertex aim[];
 Balls a, b, c, d, e, f, g, h, i, j;
 Balls ball[10] = { a, b, c, d, e, f, g, h, i, j };
 
+sf::Text moves;
+sf::Text bestScore;
 
 //TitleMenu
 sf::Text title;
-vector<sf::RectangleShape> menuRect(2);
-vector<sf::Text> menuText(2);
+vector<sf::RectangleShape> menuRect(3);
+vector<sf::Text> menuText(3);
+string menuCommands[3] = { "One Player", "Two Player", "Exit" };
+
+//PauseMenu
+sf::Text pause;
+vector<sf::RectangleShape> pauseMenuRect(2);
+vector<sf::Text> pauseMenuText(2);
+string pauseMenuCommands[2] = { "Resume", "Quit" };
 
 //Colors
 sf::Color brown(54, 18, 8);
@@ -86,13 +107,82 @@ sf::Color orange(255, 128, 0);
 sf::Color maroon(128, 0, 0);
 sf::Color grey(125, 125, 125);
 
+float dot(sf::Vector2f a, sf::Vector2f b)
+{
+	float c = a.x * b.x + a.y * b.y;
+	return c;
+}
+
+sf::Vector2f proj(sf::Vector2f a, sf::Vector2f b)
+{
+	sf::Vector2f c = (dot(b, a) / dot(a, a)) * a;
+	return c;
+}
+
+float mag(sf::Vector2f a)
+{
+	float b = sqrt(pow(a.x, 2) + pow(a.y, 2));
+	return b;
+}
+
+sf::Vector2f normal(sf::Vector2f a)
+{
+	sf::Vector2f b = a / mag(a);
+	return b;
+}
+
+void MoveDraw()
+{
+	moves.setFont(myFont);
+	moves.setCharacterSize(12);
+	moves.setStyle(sf::Text::Bold);
+	moves.setColor(sf::Color::Red);
+	moves.setOrigin(moves.getLocalBounds().width / 2, moves.getLocalBounds().height / 2);
+	moves.setPosition(WIDTH * 3 / 4, borderDepth / 2);
+	bestScore.setFont(myFont);
+	bestScore.setCharacterSize(12);
+	bestScore.setStyle(sf::Text::Bold);
+	bestScore.setColor(sf::Color::Red);
+	bestScore.setOrigin(bestScore.getLocalBounds().width / 2, bestScore.getLocalBounds().height / 2);
+	bestScore.setPosition(WIDTH * 1 / 4, borderDepth / 2);
+
+	stringstream mess2;
+	if (BS != 0)
+		mess2 << "Best Score: " << BS;
+	else
+		mess2 << "Best Score: --";
+	string message2 = mess2.str();
+	bestScore.setString(message2);
+
+	if ((twoPlayerGame) || (pause2P))
+	{
+		if (mover > 2)
+			mover = 1;
+		stringstream mess;
+		mess << "Player " << mover << "'s turn";
+		string message = mess.str();
+		moves.setString(message);
+		BILLIARDS.draw(moves);
+	}
+	else
+	{
+		stringstream mess;
+		mess << "Moves: " << mover;
+		string message = mess.str();
+		moves.setString(message);
+		BILLIARDS.draw(bestScore);
+		if ((onePlayerGame)||(pause1P))
+			BILLIARDS.draw(moves);
+	}
+}
+
 void ballsDraw()
 {
 	for (int i = 0; i < numBalls; i++)
 	{
-		ball[i].main.setRadius(ballRad);
-		ball[i].main.setOrigin(ballRad, ballRad);
-		ball[i].main.setOutlineThickness(1);
+		ball[i].main.setRadius(ballRad - ballRad /10.4);
+		ball[i].main.setOrigin(ballRad - ballRad /10.4, ballRad - ballRad / 10.4);
+		ball[i].main.setOutlineThickness(ballRad / 10.4);
 		ball[i].main.setOutlineColor(sf::Color::Black);
 		if (i != 0)
 		{
@@ -133,7 +223,7 @@ void ballsDraw()
 				ball[i].main.setFillColor(sf::Color::Black);
 				break;
 			case 9:
-				sf::Vector2f stripeSize(1.8f * ballRad, ballRad);
+				sf::Vector2f stripeSize(1.5f * ballRad, ballRad);
 				ball[i].stripe.setFillColor(sf::Color::Yellow);
 				ball[i].stripe.setSize(stripeSize);
 				ball[i].stripe.setOrigin(stripeSize.x / 2, stripeSize.y / 2);
@@ -157,7 +247,7 @@ void ballsDraw()
 	}
 }
 
-void menu()
+void titleMenu()
 {
 	title.setFont(myFont);
 	title.setCharacterSize(WIDTH / 16);
@@ -168,7 +258,6 @@ void menu()
 	title.setPosition(WIDTH / 2, 3 * HEIGHT / 16);
 
 	sf::Vector2f menuRectSize(3 * WIDTH / 16, HEIGHT / 8);
-	string menuCommands[2] = { "Play", "Exit" };
 
 	for (int i = 0; i < menuRect.size(); i++)
 	{
@@ -194,6 +283,42 @@ void menu()
 	}
 }
 
+void pauseMenu()
+{
+	pause.setFont(myFont);
+	pause.setCharacterSize(WIDTH / 16);
+	pause.setStyle(sf::Text::Bold);
+	pause.setColor(sf::Color::Black);
+	pause.setString("PAUSE");
+	pause.setOrigin(pause.getLocalBounds().width / 2, pause.getLocalBounds().height / 2);
+	pause.setPosition(WIDTH / 2, 3 * HEIGHT / 16);
+
+	sf::Vector2f menuRectSize(3 * WIDTH / 16, HEIGHT / 8);
+
+	for (int i = 0; i < pauseMenuRect.size(); i++)
+	{
+		pauseMenuRect[i].setSize(menuRectSize);
+		pauseMenuRect[i].setFillColor(grey);
+		pauseMenuRect[i].setOrigin(menuRectSize.x / 2, menuRectSize.y / 2);
+		pauseMenuRect[i].setPosition(WIDTH / 2, 6 * HEIGHT / 16 + i * (5 * HEIGHT / 32));
+
+		pauseMenuText[i].setFont(myFont);
+		pauseMenuText[i].setCharacterSize(2 * pause.getCharacterSize() / 5);
+		pauseMenuText[i].setStyle(sf::Text::Bold);
+		pauseMenuText[i].setColor(sf::Color::Black);
+		pauseMenuText[i].setString(pauseMenuCommands[i]);
+		pauseMenuText[i].setOrigin(pauseMenuText[i].getLocalBounds().width / 2, pauseMenuText[i].getLocalBounds().height / 2);
+		pauseMenuText[i].setPosition(pauseMenuRect[i].getPosition().x, pauseMenuRect[i].getPosition().y);
+	}
+
+	BILLIARDS.draw(pause);
+	for (int i = 0; i < pauseMenuRect.size(); i++)
+	{
+		BILLIARDS.draw(pauseMenuRect[i]);
+		BILLIARDS.draw(pauseMenuText[i]);
+	}
+}
+
 void table()
 {
 	sf::Vector2f tbBorder(WIDTH, borderDepth);
@@ -202,7 +327,10 @@ void table()
 	float borderPosX[4] = {0.f, 0.f, 0.f, WIDTH - borderDepth};
 	float borderPosY[4] = {0.f, HEIGHT - borderDepth, 0.f, 0.f};
 	float pocketPosX[3] = {borderLeft, WIDTH / 2, borderRight};
-	float pocketPosY[2] = {borderTop, borderBot};
+	float pocketPosY[2] = {borderTop - 5, borderBot + 5};
+	float pocket2OrigX[6] = { pocketRad, pocketRad, pocketRad, pocketRad, pocketRad, pocketRad};
+	float pocket2OrigY[6] = { 0, pocketRad, 0, pocketRad, 0, pocketRad };
+	float pocket2Angle[6] = { -45, 45, 0, 0, 45, -45 };
 	
 	mat.setSize(matSize);
 	mat.setOrigin(matSize.x / 2, matSize.y / 2);
@@ -221,26 +349,37 @@ void table()
 
 	for (int i = 0; i < 6; i++)
 	{
-		pockets[i].setRadius(pocketRad);
-		pockets[i].setOrigin(pocketRad, pocketRad);
-		pockets[i].setFillColor(sf::Color::Black);
-		pockets[i].setOutlineColor(sf::Color::Black);
-		pockets[i].setOutlineThickness(1);
-	}
-
-	int k = 0;
-	for (int i = 0; i < 3; i++)
-	{ 
-		for (int j = 0; j < 2; j++)
+			pockets[i].setRadius(pocketRad);
+			pockets[i].setOrigin(pocketRad, pocketRad);
+			pockets[i].setFillColor(sf::Color::Black);
+		if ((i != 2) && (i != 3))
 		{
-			pockets[k].setPosition(pocketPosX[i], pocketPosY[j]);
-			k = k + 1;
+			pockets2[i].setSize(pocket2Size);
+			pockets2[i].setOrigin(pocket2OrigX[i], pocket2OrigY[i]);
+			pockets2[i].setFillColor(sf::Color::Black);
+			pockets2[i].setRotation(pocket2Angle[i]);
 		}
 	}
 
+	pockets[0].setPosition(borderLeft, borderTop);
+	pockets[1].setPosition(borderLeft, borderBot);
+	pockets[2].setPosition(WIDTH / 2, borderTop);
+	pockets[3].setPosition(WIDTH / 2, borderBot);
+	pockets[4].setPosition(borderRight, borderTop);
+	pockets[5].setPosition(borderRight, borderBot);
+
+	for (int i = 0; i < pockets2.size(); i++)
+		pockets2[i].setPosition(pockets[i].getPosition());
+
 	BILLIARDS.draw(mat);
 	for (int i = 0; i < borders.size(); i++) { BILLIARDS.draw(borders[i]); }
-	for (int i = 0; i < pockets.size(); i++) { BILLIARDS.draw(pockets[i]); }
+	for (int i = 0; i < pockets.size(); i++) 
+	{ 
+		BILLIARDS.draw(pockets[i]);
+		BILLIARDS.draw(pockets2[i]);
+	}
+
+	MoveDraw();
 }
 
 void setup()
@@ -282,38 +421,30 @@ void ballCollision(int a)
 	{
 		if ((a != b) && (!ball[b].isPocketed))
 		{
-			sf::Vector2f col = ball[a].main.getPosition() - ball[b].main.getPosition();
-			float d = sqrt(col.x * col.x + col.y * col.y);
-			if (d < 2 * ballRad)
+			sf::Vector2f col = ball[b].main.getPosition() - ball[a].main.getPosition();
+			if (mag(col) < 2 * ballRad)
 			{
-				if (ball[a].collidedWith[0] == NULL)
-				{
-					ball[a].collidedWith[0] = b;
-					ball[b].collidedWith[0] = a;
+				if ((firstHit == -1) && (a == 0))
+					firstHit = b;
 
-					col.x = col.x / d;
-					col.y = col.y / d;
+				sf::Vector2f ballavel(ball[a].velocity);
+				sf::Vector2f ballbvel(ball[b].velocity);
 
-					float ballavel = ball[a].vx * col.x + ball[a].vy * col.y;
-					float ballbvel = ball[b].vx * col.x + ball[b].vy * col.y;
-					
-					ball[a].vx = (ballavel - (ballavel - ballbvel) * col.x);
-					ball[a].vy = (ballavel - (ballavel - ballbvel) * col.y);
-					ball[b].vx = (ballbvel - (ballbvel - ballavel) * col.x);
-					ball[b].vy = (ballbvel - (ballbvel - ballavel) * col.y);
+				sf::Vector2f initializeDistance((2 * ballRad) * normal(col).x , (2 * ballRad ) * normal(col).y);
+				ball[a].main.setPosition(ball[b].main.getPosition() - (initializeDistance));
+				ball[a].velocity = zero;
+				ball[b].velocity = zero;
 
-					ball[a].speed = sqrt(ball[a].vx * ball[a].vx + ball[a].vy * ball[a].vy);
-					ball[b].speed = sqrt(ball[b].vx * ball[b].vx + ball[b].vy * ball[b].vy);
-					ball[a].angle = atan2f(ball[a].vy, ball[a].vx);
-					ball[b].angle = atan2f(ball[b].vy, ball[b].vx);
-				}
+				col = ball[b].main.getPosition() - ball[a].main.getPosition();
+
+				sf::Vector2f aPar = proj(col, ballavel);
+				sf::Vector2f bPar = proj(col, ballbvel);
+				sf::Vector2f aPerp = ballavel - aPar;
+				sf::Vector2f bPerp = ballbvel - bPar;
+
+				ball[a].velocity = bPar + aPerp;
+				ball[b].velocity = aPar + bPerp;
 			}
-			else
-			{
-				ball[a].collidedWith[0] = NULL;
-				ball[b].collidedWith[0] = NULL;
-			}
-
 		}
 	}
 }
@@ -323,22 +454,22 @@ void wallCollision(int a)
 	if (ball[a].main.getPosition().x >= borderRight - ballRad)
 	{
 		ball[a].main.setPosition(borderRight - ballRad, ball[a].main.getPosition().y);
-		ball[a].angle = -ball[a].angle + pi;
+		ball[a].velocity.x = -ball[a].velocity.x;
 	}
 	if (ball[a].main.getPosition().x <= borderLeft + ballRad)
 	{
 		ball[a].main.setPosition(borderLeft + ballRad, ball[a].main.getPosition().y);
-		ball[a].angle = -ball[a].angle + pi;
+		ball[a].velocity.x = -ball[a].velocity.x;
 	}
 	if (ball[a].main.getPosition().y <= borderTop + ballRad)
 	{
 		ball[a].main.setPosition(ball[a].main.getPosition().x, borderTop + ballRad);
-		ball[a].angle = -ball[a].angle;
+		ball[a].velocity.y = -ball[a].velocity.y;
 	}
 	if (ball[a].main.getPosition().y >= borderBot - ballRad)
 	{
 		ball[a].main.setPosition(ball[a].main.getPosition().x, borderBot - ballRad);
-		ball[a].angle = -ball[a].angle;
+		ball[a].velocity.y = -ball[a].velocity.y;
 	}
 }
 
@@ -346,10 +477,12 @@ void pocketCheck(int i)
 {
 	for (int j = 0; j < pockets.size(); j++)
 	{
-		if (sqrt(pow(ball[i].main.getPosition().x - pockets[j].getPosition().x, 2) + pow(ball[i].main.getPosition().y - pockets[j].getPosition().y, 2)) < pocketRad)
+		if ((!ball[i].isPocketed) && (sqrt(pow(ball[i].main.getPosition().x - pockets[j].getPosition().x, 2) + pow(ball[i].main.getPosition().y - pockets[j].getPosition().y, 2)) < 
+			pocketRad * 1))
 		{
+			justGotPocketed = true;
 			ball[i].isPocketed = true;
-			ball[i].speed = 0;
+			ball[i].velocity = zero;
 		}
 	}
 }
@@ -358,6 +491,15 @@ void pocketCheck(int i)
 ///////////////////////////////////////////////////////Main//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main()
 {
+	string s;
+	ifstream fs;
+	fs.open("BS.txt");
+	if (fs.is_open())
+	{
+		fs >> s;
+	}
+	fs.close();
+	BS = stoi(s);
 
 	BILLIARDS.setVerticalSyncEnabled(true);
 	if (!myFont.loadFromFile("orbitron-black.otf")) { cout << "Font can't be loaded." << std::endl; }
@@ -373,35 +515,103 @@ int main()
 			while (BILLIARDS.pollEvent(event))
 			{
 				if (event.type == sf::Event::Closed)
+				{
+					stringstream s;
+					ofstream fs;
+					fs.open("BS.txt");
+					fs << BS;
+					fs.close();
+
 					BILLIARDS.close();
+					return 0;
+				}
 				if (event.mouseButton.button == sf::Mouse::Left && event.type == sf::Event::MouseButtonReleased)
 				{
 					bool menuCommandActivate[] = { false, false, false };
-					for (int i = 0; i < menuRect.size(); i++)
+
+					if (!pauseGame)
 					{
-						if (abs(event.mouseButton.x - menuRect[i].getPosition().x) < menuRect[i].getSize().x / 2)
+						for (int i = 0; i < menuRect.size(); i++)
 						{
-							if (abs(event.mouseButton.y - menuRect[i].getPosition().y) < menuRect[i].getSize().y / 2)
-								menuCommandActivate[i] = true;
+							if (abs(event.mouseButton.x - menuRect[i].getPosition().x) < menuRect[i].getSize().x / 2)
+							{
+								if (abs(event.mouseButton.y - menuRect[i].getPosition().y) < menuRect[i].getSize().y / 2)
+									menuCommandActivate[i] = true;
+							}
+						}
+						if (menuCommandActivate[0])
+						{
+							onePlayerGame = true;
+							gameStart = true;
+							mover = 0;
+							setup();
+						}
+						if (menuCommandActivate[1])
+						{
+							twoPlayerGame = true;
+							gameStart = true;
+							mover = 1;
+							setup();
+						}
+						if (menuCommandActivate[2])
+							programExit = true;
+					}
+					else
+					{
+						bool menuCommandActivate[] = { false, false, false };
+						for (int i = 0; i < pauseMenuRect.size(); i++)
+						{
+							if (abs(event.mouseButton.x - pauseMenuRect[i].getPosition().x) < pauseMenuRect[i].getSize().x / 2)
+							{
+								if (abs(event.mouseButton.y - pauseMenuRect[i].getPosition().y) < pauseMenuRect[i].getSize().y / 2)
+									menuCommandActivate[i] = true;
+							}
+						}
+						if (menuCommandActivate[0])
+						{
+							if (pause1P)
+								onePlayerGame = true;
+							else if (pause2P)
+								twoPlayerGame = true;
+							pause1P = false;
+							pause2P = false;
+							pauseGame = false;
+						}
+						if (menuCommandActivate[1])
+						{
+							onePlayerGame = false;
+							twoPlayerGame = false;
+							for (int i = 0; i < numBalls; i++)
+							{
+								ball[i].isPocketed = false;
+								ball[i].velocity = zero;
+							}
+							playerIsAiming = false;
+							playerMovesBall = false;
+							gameStart = false;
+							gameIsMoving = false;
+							pauseGame = false;
+							pause1P = false;
+							pause2P = false;
 						}
 					}
-					if (menuCommandActivate[0])
-					{
-						onePlayerGame = true;
-						gameStart = true;
-						setup();
-					}
-					if (menuCommandActivate[1])
-						programExit = true;
 				}
 			}
 
 			table();
-			menu();
+			if (pauseGame)
+			{
+				clock.restart().asMilliseconds();
+				ballsDraw();
+				BILLIARDS.draw(ball[0].main);
+				pauseMenu();
+			}
+			else
+				titleMenu();
 			BILLIARDS.display();
 			BILLIARDS.clear();
-
-			while (onePlayerGame)
+///////////////////////////////////////////////////////Game/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			while ((onePlayerGame) || (twoPlayerGame))
 			{
 				float gameTime = clock.restart().asMilliseconds();
 				while (BILLIARDS.pollEvent(event))
@@ -417,8 +627,8 @@ int main()
 						}
 						else if (playerIsAiming)
 						{
-							ball[0].angle = aimAngle;
-							ball[0].speed = aimLength * aimStandardForce;
+							sf::Vector2f newAngle(cos(aimAngle), sin(aimAngle));
+							ball[0].velocity = aimLength * aimStandardForce * newAngle;
 							playerIsAiming = false;
 							gameIsMoving = true;
 						}
@@ -427,7 +637,22 @@ int main()
 							playerMovesBall = false;
 							playerIsAiming = true;
 						}
-						
+
+					}
+
+					if (event.key.code == sf::Keyboard::P && event.type == event.KeyReleased)
+					{
+						pauseGame = true;
+						if (onePlayerGame)
+						{
+							onePlayerGame = false;
+							pause1P = true;
+						}
+						else if (twoPlayerGame)
+						{
+							twoPlayerGame = false;
+							pause2P = true;
+						}
 					}
 				}
 				if (gameStart)
@@ -450,7 +675,7 @@ int main()
 						}
 					}
 				}
-				
+
 				table();
 				ballsDraw();
 
@@ -487,15 +712,23 @@ int main()
 
 				if (playerIsAiming)
 				{
+					firstHit = -1;
+					ballToHit = 1;
+					for (int i = 1; i < numBalls; i++)
+					{
+						if (ball[ballToHit].isPocketed)
+							ballToHit += 1;
+					}
+
 					aimAngle = atan2f(ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y, ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x);
 					aimLength = sqrt((ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) * (ball[0].main.getPosition().x - sf::Mouse::getPosition(BILLIARDS).x) + (ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y) * (ball[0].main.getPosition().y - sf::Mouse::getPosition(BILLIARDS).y));
 
-					if (aimLength > 100) { aimLength = 100; }
+					if (aimLength > aimMax) { aimLength = aimMax; }
 
 					sf::Vector2f aimOrigin(ball[0].main.getPosition());
 					sf::Vector2f aimXY(aimLength * cos(aimAngle), aimLength  * sin(aimAngle));
-					sf::Vector2f arrwXY1(3 * aimLength / 10 * cos(aimAngle - 5 * pi / 6), 3 * aimLength / 10 * sin(aimAngle - 5 * pi / 6));
-					sf::Vector2f arrwXY2(3 * aimLength / 10 * cos(aimAngle - 7 * pi / 6), 3 * aimLength / 10 * sin(aimAngle - 7 * pi / 6));
+					sf::Vector2f arrwXY1(3 * aimLength / 10 * cos(aimAngle - 11 * pi / 12), 3 * aimLength / 10 * sin(aimAngle - 11 * pi / 12));
+					sf::Vector2f arrwXY2(3 * aimLength / 10 * cos(aimAngle - 13 * pi / 12), 3 * aimLength / 10 * sin(aimAngle - 13 * pi / 12));
 
 
 					sf::Vertex aim[] =
@@ -523,17 +756,14 @@ int main()
 				}
 
 				if (gameIsMoving)
-				{	
+				{
+					cout << "FH " << firstHit;
+					cout << "BTH" << ballToHit << "\n";
 					for (int i = 0; i < numBalls; i++)
 					{
 						if (!ball[i].isPocketed)
 						{
-							if (ball[i].speed <= 0)
-								ball[i].speed = 0;
-							else
-							{
-								ballCollision(i);
-							}
+							ballCollision(i);
 							wallCollision(i);
 							pocketCheck(i);
 						}
@@ -541,10 +771,13 @@ int main()
 
 					for (int i = 0; i < numBalls; i++)
 					{
-						ball[i].vx = ball[i].speed * cos(ball[i].angle);
-						ball[i].vy = ball[i].speed * sin(ball[i].angle);
-						ball[i].main.setPosition(ball[i].main.getPosition().x + ball[i].vx * gameTime, ball[i].main.getPosition().y + ball[i].vy * gameTime);
-						ball[i].speed = ball[i].speed - frictionForce;
+						ball[i].main.setPosition(ball[i].main.getPosition() + ball[i].velocity * gameTime);
+						sf::Vector2f ballVelocityAngle(cos(atan2f(ball[i].velocity.y, ball[i].velocity.x)), sin(atan2f(ball[i].velocity.y, ball[i].velocity.x)));
+						float speed = sqrt(pow(ball[i].velocity.x, 2) + pow(ball[i].velocity.y, 2));
+						speed = speed - frictionForce;
+						if (speed <= 0)
+							speed = 0;
+						ball[i].velocity = speed * ballVelocityAngle;
 
 						if (i != 0)
 						{
@@ -553,64 +786,94 @@ int main()
 							ball[i].stripe.setPosition(ball[i].main.getPosition());
 						}
 					}
-					bool noBallMoving = true;
+					noBallMoving = true;
 
 					for (int i = 0; i < numBalls; i++)
 					{
-						if (ball[i].speed > 0)
-						{
+						if (ball[i].velocity != zero)
 							noBallMoving = false;
-						}
 					}
 
 					if (noBallMoving)
 					{
 						gameIsMoving = false;
-						bool allIsPocketed = true;
-						for (int i = 1; i < numBalls; i++)
+						if (ball[numBalls - 1].isPocketed)
 						{
-							if (!ball[i].isPocketed)
-								allIsPocketed = false;
-						}
-						if (allIsPocketed)
-						{
-							if (ball[0].isPocketed)
+							if ((firstHit != ballToHit) || (ball[0].isPocketed))
 							{
 								ball[numBalls - 1].isPocketed = false;
 								ball[numBalls - 1].main.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
+								ballCollision(numBalls - 1);
 								if (numBalls == 10)
-									ball[numBalls - 1].stripe.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
-								ball[numBalls - 1].mark.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
-								ball[numBalls - 1].num.setPosition(3 * WIDTH / 4.f, HEIGHT / 2.f);
+									ball[numBalls - 1].stripe.setPosition(ball[numBalls - 1].main.getPosition());
+								ball[numBalls - 1].mark.setPosition(ball[numBalls - 1].main.getPosition());
+								ball[numBalls - 1].num.setPosition(ball[numBalls - 1].main.getPosition());
 								playerMovesBall = true;
+
+								if (onePlayerGame)
+									mover += 2;
+								else
+									mover += 1;
 							}
 							else
 							{
-								onePlayerGame = false;
+								if (onePlayerGame)
+								{
+									mover += 1;
+									if ((mover < BS) || (BS == 0))
+										BS == mover;
+									onePlayerGame = false;
+								}
+
+								if (twoPlayerGame)
+								{
+									twoPlayerGame = false;
+								}
 								for (int i = 0; i < numBalls; i++)
 								{
 									ball[i].isPocketed = false;
-									ball[i].speed = 0;
+									ball[i].velocity = zero;
 								}
 							}
 						}
 						else
 						{
-							if (ball[0].isPocketed)
+							if ((ball[0].isPocketed) || (ballToHit != firstHit))
+							{
 								playerMovesBall = true;
+								if (onePlayerGame)
+									mover += 2;
+								else
+									mover += 1;
+							}
 							else
+							{
+								if (twoPlayerGame)
+								{
+									if (justGotPocketed)
+										justGotPocketed = false;
+									else
+										mover += 1;
+								}
+								else
+									mover += 1;
 								playerIsAiming = true;
+							}
 						}
 					}
 				}
 				BILLIARDS.display();
 				BILLIARDS.clear();
 			}
-		}
-		if (programExit)
-		{
-			return 0;
+			if (programExit)
+			{
+				stringstream s;
+				ofstream fs;
+				fs.open("BS.txt");
+				fs << BS;
+				fs.close();
+				return 0;
+			}
 		}
 	}
-
 }
