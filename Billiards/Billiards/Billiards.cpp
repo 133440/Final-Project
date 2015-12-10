@@ -71,6 +71,9 @@ bool pauseGame = false;
 bool pause1P = false;
 bool pause2P = false;
 bool noBallMoving = false;
+bool endofGame = false;
+bool end1P = false;
+bool end2P = false;
 
 //Objects
 sf::RenderWindow BILLIARDS(sf::VideoMode(WIDTH, HEIGHT, 64), "Billiards", sf::Style::Titlebar | sf::Style::Close);
@@ -97,6 +100,13 @@ sf::Text pause;
 vector<sf::RectangleShape> pauseMenuRect(2);
 vector<sf::Text> pauseMenuText(2);
 string pauseMenuCommands[2] = { "Resume", "Quit" };
+
+//gameEnd
+sf::Text endTitle;
+vector<sf::RectangleShape> endMenuRect(1);
+vector<sf::Text> endMenuText(1);
+string endMenuCommands[1] = { "Main Menu"};
+
 
 //Colors
 sf::Color brown(54, 18, 8);
@@ -319,6 +329,56 @@ void pauseMenu()
 	}
 }
 
+void endGame()
+{
+	endTitle.setFont(myFont);
+	endTitle.setCharacterSize(WIDTH / 16);
+	endTitle.setStyle(sf::Text::Bold);
+	endTitle.setColor(sf::Color::Black);
+	string str;
+	if (end1P)
+	{
+		stringstream message;
+		message << "Final score: " << mover;
+		str = message.str();
+		
+	}
+	else if (end2P)
+	{
+		stringstream message;
+		message << "Player " << mover << " wins!";
+		str = message.str();
+	}
+	endTitle.setString(str);
+	endTitle.setOrigin(endTitle.getLocalBounds().width / 2, endTitle.getLocalBounds().height / 2);
+	endTitle.setPosition(WIDTH / 2, 2 * HEIGHT / 5);
+
+	sf::Vector2f menuRectSize(3 * WIDTH / 16, HEIGHT / 8);
+
+	for (int i = 0; i < endMenuRect.size(); i++)
+	{
+		endMenuRect[i].setSize(menuRectSize);
+		endMenuRect[i].setFillColor(grey);
+		endMenuRect[i].setOrigin(menuRectSize.x / 2, menuRectSize.y / 2);
+		endMenuRect[i].setPosition(WIDTH / 2, 4 * HEIGHT / 5);
+
+		endMenuText[i].setFont(myFont);
+		endMenuText[i].setCharacterSize(2 * pause.getCharacterSize() / 5);
+		endMenuText[i].setStyle(sf::Text::Bold);
+		endMenuText[i].setColor(sf::Color::Black);
+		endMenuText[i].setString(endMenuCommands[i]);
+		endMenuText[i].setOrigin(endMenuText[i].getLocalBounds().width / 2, endMenuText[i].getLocalBounds().height / 2);
+		endMenuText[i].setPosition(endMenuRect[i].getPosition().x, endMenuRect[i].getPosition().y);
+	}
+
+	BILLIARDS.draw(endTitle);
+	for (int i = 0; i < endMenuRect.size(); i++)
+	{
+		BILLIARDS.draw(endMenuRect[i]);
+		BILLIARDS.draw(endMenuText[i]);
+	}
+}
+
 void table()
 {
 	sf::Vector2f tbBorder(WIDTH, borderDepth);
@@ -528,35 +588,7 @@ int main()
 				if (event.mouseButton.button == sf::Mouse::Left && event.type == sf::Event::MouseButtonReleased)
 				{
 					bool menuCommandActivate[] = { false, false, false };
-
-					if (!pauseGame)
-					{
-						for (int i = 0; i < menuRect.size(); i++)
-						{
-							if (abs(event.mouseButton.x - menuRect[i].getPosition().x) < menuRect[i].getSize().x / 2)
-							{
-								if (abs(event.mouseButton.y - menuRect[i].getPosition().y) < menuRect[i].getSize().y / 2)
-									menuCommandActivate[i] = true;
-							}
-						}
-						if (menuCommandActivate[0])
-						{
-							onePlayerGame = true;
-							gameStart = true;
-							mover = 0;
-							setup();
-						}
-						if (menuCommandActivate[1])
-						{
-							twoPlayerGame = true;
-							gameStart = true;
-							mover = 1;
-							setup();
-						}
-						if (menuCommandActivate[2])
-							programExit = true;
-					}
-					else
+					if (pauseGame)
 					{
 						bool menuCommandActivate[] = { false, false, false };
 						for (int i = 0; i < pauseMenuRect.size(); i++)
@@ -595,6 +627,54 @@ int main()
 							pause2P = false;
 						}
 					}
+
+					else if (endofGame)
+					{
+						bool menuCommandActivate[] = { false, false, false };
+						for (int i = 0; i < endMenuRect.size(); i++)
+						{
+							if (abs(event.mouseButton.x - endMenuRect[i].getPosition().x) < endMenuRect[i].getSize().x / 2)
+							{
+								if (abs(event.mouseButton.y - endMenuRect[i].getPosition().y) < endMenuRect[i].getSize().y / 2)
+									menuCommandActivate[i] = true;
+							}
+						}
+						if (menuCommandActivate[0])
+						{
+							endofGame = false;
+							end1P = false;
+							end2P = false;
+						}
+					}
+
+					else
+					{
+						for (int i = 0; i < menuRect.size(); i++)
+						{
+							if (abs(event.mouseButton.x - menuRect[i].getPosition().x) < menuRect[i].getSize().x / 2)
+							{
+								if (abs(event.mouseButton.y - menuRect[i].getPosition().y) < menuRect[i].getSize().y / 2)
+									menuCommandActivate[i] = true;
+							}
+						}
+						if (menuCommandActivate[0])
+						{
+							onePlayerGame = true;
+							gameStart = true;
+							mover = 0;
+							setup();
+						}
+						if (menuCommandActivate[1])
+						{
+							twoPlayerGame = true;
+							gameStart = true;
+							mover = 1;
+							setup();
+						}
+						if (menuCommandActivate[2])
+							programExit = true;
+					}
+					
 				}
 			}
 
@@ -605,6 +685,13 @@ int main()
 				ballsDraw();
 				BILLIARDS.draw(ball[0].main);
 				pauseMenu();
+			}
+			else if (endofGame)
+			{
+				clock.restart().asMilliseconds();
+				ballsDraw();
+				BILLIARDS.draw(ball[0].main);
+				endGame();
 			}
 			else
 				titleMenu();
@@ -757,8 +844,6 @@ int main()
 
 				if (gameIsMoving)
 				{
-					cout << "FH " << firstHit;
-					cout << "BTH" << ballToHit << "\n";
 					for (int i = 0; i < numBalls; i++)
 					{
 						if (!ball[i].isPocketed)
@@ -820,14 +905,18 @@ int main()
 								if (onePlayerGame)
 								{
 									mover += 1;
-									if ((mover < BS) || (BS == 0))
-										BS == mover;
+									if (mover < BS)
+										BS = mover;									
 									onePlayerGame = false;
+									end1P = true;
+									endofGame = true;
 								}
 
 								if (twoPlayerGame)
 								{
 									twoPlayerGame = false;
+									end2P = true;
+									endofGame = true;
 								}
 								for (int i = 0; i < numBalls; i++)
 								{
